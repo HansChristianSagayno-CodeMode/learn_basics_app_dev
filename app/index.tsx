@@ -97,7 +97,7 @@ wave:{
 },
 
 button: {
-  backgroundColor: "#11B5D9",
+  backgroundColor: "#22bcde",
   paddingVertical: 16,
   paddingHorizontal: 80,
   borderRadius: 12,
