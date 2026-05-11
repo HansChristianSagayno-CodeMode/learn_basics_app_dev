@@ -4,7 +4,7 @@ import {
   View,
   TouchableOpacity,
 } from "react-native";
-
+import { router } from "expo-router";
 export default function Index() {
   return (
 
@@ -33,8 +33,10 @@ export default function Index() {
        
       </View>
 
-
-   <TouchableOpacity style={styles.button}>
+      <TouchableOpacity
+  style={styles.button}
+  onPress={() => router.push("/walkthrough")}
+>
   <Text style={styles.buttonText}>
     GET STARTED
   </Text>
