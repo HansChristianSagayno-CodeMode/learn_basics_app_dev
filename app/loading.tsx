@@ -13,7 +13,7 @@ import {
     useEffect(() => {
   
       const timer = setTimeout(() => {
-        router.push("/loading");
+        router.push("/navigation" as any);
       }, 3000);
   
       return () => clearTimeout(timer);

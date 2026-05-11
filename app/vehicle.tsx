@@ -13,11 +13,15 @@ import {
     "SUV",
     "Truck",
     "Pedestrian",
+    "Other",
   ];
   
   export default function Vehicle() {
     const [selectedVehicle, setSelectedVehicle] =
       useState("");
+  
+    const [showDropdown, setShowDropdown] =
+      useState(false);
   
     return (
       <View style={styles.container}>
@@ -39,29 +43,42 @@ import {
   
         <View style={styles.vehicleContainer}>
   
-          {vehicles.map((vehicle) => (
-            <TouchableOpacity
-              key={vehicle}
-              style={[
-                styles.vehicleCard,
-                selectedVehicle === vehicle &&
-                  styles.selectedCard,
-              ]}
-              onPress={() =>
-                setSelectedVehicle(vehicle)
-              }
-            >
-              <Text
+          <TouchableOpacity
+            style={styles.vehicleCard}
+            onPress={() =>
+              setShowDropdown(!showDropdown)
+            }
+          >
+            <Text style={styles.vehicleText}>
+              {selectedVehicle || "Select Vehicle"}
+            </Text>
+          </TouchableOpacity>
+  
+          {showDropdown &&
+            vehicles.map((vehicle) => (
+              <TouchableOpacity
+                key={vehicle}
                 style={[
-                  styles.vehicleText,
+                  styles.dropdownItem,
                   selectedVehicle === vehicle &&
-                    styles.selectedText,
+                    styles.selectedCard,
                 ]}
+                onPress={() => {
+                  setSelectedVehicle(vehicle);
+                  setShowDropdown(false);
+                }}
               >
-                {vehicle}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.vehicleText,
+                    selectedVehicle === vehicle &&
+                      styles.selectedText,
+                  ]}
+                >
+                  {vehicle}
+                </Text>
+              </TouchableOpacity>
+            ))}
   
         </View>
   
@@ -118,6 +135,15 @@ import {
     },
   
     vehicleCard: {
+      backgroundColor: "#F0F0F0",
+      paddingVertical: 18,
+      borderRadius: 14,
+      paddingHorizontal: 20,
+      borderWidth: 2,
+      borderColor: "transparent",
+    },
+  
+    dropdownItem: {
       backgroundColor: "#F0F0F0",
       paddingVertical: 18,
       borderRadius: 14,

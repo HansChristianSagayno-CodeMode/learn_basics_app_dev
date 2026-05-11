@@ -12,7 +12,6 @@ import {
     return (
       <View style={styles.container}>
   
-       
         <Text style={styles.close}>✕</Text>
   
         {/* Header */}
@@ -30,26 +29,30 @@ import {
   
         </View>
   
-       
-        <TouchableOpacity style={styles.locationButton}
-        
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={() => router.push("/vehicle")}
         >
           <Text style={styles.locationText}>
             📍 Use current location
           </Text>
         </TouchableOpacity>
   
-       
         <TextInput
           placeholder="Enter a new address"
           placeholderTextColor="#999"
           style={styles.input}
+          returnKeyType="done"
+          onSubmitEditing={() => router.push("/vehicle")}
         />
   
         {/* Suggested Locations */}
         <View style={styles.suggestionContainer}>
   
-          <TouchableOpacity style={styles.locationCard}>
+          <TouchableOpacity
+            style={styles.locationCard}
+            onPress={() => router.push("/vehicle")}
+          >
             <Text style={styles.locationTitle}>
               Davao International Airport
             </Text>
@@ -59,7 +62,10 @@ import {
             </Text>
           </TouchableOpacity>
   
-          <TouchableOpacity style={styles.locationCard}>
+          <TouchableOpacity
+            style={styles.locationCard}
+            onPress={() => router.push("/vehicle")}
+          >
             <Text style={styles.locationTitle}>
               Roxas Avenue
             </Text>
@@ -69,7 +75,10 @@ import {
             </Text>
           </TouchableOpacity>
   
-          <TouchableOpacity style={styles.locationCard}>
+          <TouchableOpacity
+            style={styles.locationCard}
+            onPress={() => router.push("/vehicle")}
+          >
             <Text style={styles.locationTitle}>
               Matina Crossing
             </Text>
