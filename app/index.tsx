@@ -3,6 +3,7 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 export default function Index() {
@@ -16,9 +17,10 @@ export default function Index() {
       </View>
 
 
-        <View style={styles.logoPlaceholder}>
-        <Text style={styles.logoText}>LOGO HERE</Text>
-      </View>
+      <Image
+  source={require("../assets/images/wave.png")}
+  style={styles.logo}
+/>
 
       
       <View style={styles.bottom_container}>
@@ -130,6 +132,14 @@ buttonText: {
     fontSize: 20,
     fontWeight: "600",
     color: "#2F4A3E",
+  },
+
+  logo: {
+    marginTop: 50,
+    width: 280,
+    height: 250,
+    resizeMode: "contain",
+    alignSelf: "center",
   },
 
 

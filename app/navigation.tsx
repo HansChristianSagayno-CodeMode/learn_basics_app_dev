@@ -1,6 +1,9 @@
-// app/navigation.tsx
+import React, {
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +13,11 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Animated,
+  PanResponder,
 } from "react-native";
+
+import floodData from "../data/floodData.json";
 
 import MapView, {
   Marker,
@@ -35,8 +42,10 @@ const initialMarkers: FloodMarker[] = [
     id: "1",
     latitude: 7.0731,
     longitude: 125.6128,
-    severity: "danger",
+    severity:
+      floodData.recommendedSeverity as Severity,
     title: "Roxas Avenue",
+    description: floodData.warning,
   },
   {
     id: "2",
@@ -69,41 +78,53 @@ const vehicleLimits = {
 
 export default function NavigationScreen() {
   const [markers, setMarkers] = useState(initialMarkers);
+
   const [selectedVehicle] = useState("sedan");
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] =
+    useState(false);
 
-  const [selectedCoords, setSelectedCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [selectedCoords, setSelectedCoords] =
+    useState<{
+      latitude: number;
+      longitude: number;
+    } | null>(null);
 
   const [selectedSeverity, setSelectedSeverity] =
     useState<Severity>("moderate");
 
   const [note, setNote] = useState("");
 
-  const [loadingRoute, setLoadingRoute] = useState(false);
+  const [loadingRoute, setLoadingRoute] =
+    useState(false);
 
-  const routeStatus = useMemo(() => {
-    const hasDanger = markers.some(
-      (m) => m.severity === "danger"
-    );
+  const [selectedMarker, setSelectedMarker] =
+    useState<FloodMarker | null>(null);
 
-    if (selectedVehicle === "sedan" && hasDanger) {
-      return {
+  const bottomSheetAnimation = useRef(
+    new Animated.Value(260)
+  ).current;
+
+  const routeStatus =
+  floodData.recommendedSeverity === "danger"
+    ? {
         status: "Unsafe Route Detected",
         color: "#ff4444",
+      }
+    : floodData.recommendedSeverity ===
+      "moderate"
+    ? {
+        status: "Passable With Caution",
+        color: "#E6A800",
+      }
+    : {
+        status: "Route Is Safe",
+        color: "#2F4A3E",
       };
-    }
 
-    return {
-      status: "Safe Route Found",
-      color: "#2F4A3E",
-    };
-  }, [markers]);
-
-  const getMarkerColor = (severity: Severity) => {
+  const getMarkerColor = (
+    severity: Severity
+  ) => {
     switch (severity) {
       case "safe":
         return "green";
@@ -116,12 +137,95 @@ export default function NavigationScreen() {
     }
   };
 
+  const getCardContent = () => {
+    if (!selectedMarker) return null;
+
+    switch (selectedMarker.severity) {
+      case "danger":
+        return {
+          title: "Dangerous Flood Area",
+          depth: "Flood depth: ~0.9m",
+          status: routeStatus.status,
+          note:
+            "Avoid this area immediately",
+          color: "#ff4444",
+        };
+
+      case "moderate":
+        return {
+          title: "Moderate Flood Area",
+          depth: "Flood depth: ~0.4m",
+          status: routeStatus.status,
+          note:
+            "Reduce speed / consider alternate route",
+          color: "#E6A800",
+        };
+
+      case "safe":
+        return {
+          title: "Safe Flood Area",
+          depth: "Flood depth: ~0.1m",
+          status: routeStatus.status,
+          note:
+            "Normal travel conditions",
+          color: "#2F4A3E",
+        };
+    }
+  };
+
+  const openBottomSheet = () => {
+    Animated.spring(bottomSheetAnimation, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeBottomSheet = () => {
+    Animated.spring(bottomSheetAnimation, {
+      toValue: 260,
+      useNativeDriver: true,
+    }).start();
+
+    setSelectedMarker(null);
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) {
+          bottomSheetAnimation.setValue(
+            gesture.dy
+          );
+        }
+      },
+
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > 120) {
+          closeBottomSheet();
+        } else {
+          openBottomSheet();
+        }
+      },
+    })
+  ).current;
+
   const handleMapPress = (event: any) => {
-    const coordinate = event.nativeEvent.coordinate;
+    const coordinate =
+      event.nativeEvent.coordinate;
 
     setSelectedCoords(coordinate);
 
     setModalVisible(true);
+  };
+
+  const handleMarkerPress = (
+    marker: FloodMarker
+  ) => {
+    setSelectedMarker(marker);
+
+    openBottomSheet();
   };
 
   const submitReport = () => {
@@ -139,7 +243,10 @@ export default function NavigationScreen() {
     };
 
     setTimeout(() => {
-      setMarkers((prev) => [...prev, newMarker]);
+      setMarkers((prev) => [
+        ...prev,
+        newMarker,
+      ]);
 
       setLoadingRoute(false);
 
@@ -148,6 +255,8 @@ export default function NavigationScreen() {
       setNote("");
     }, 1500);
   };
+
+  const cardContent = getCardContent();
 
   return (
     <View style={styles.container}>
@@ -168,9 +277,14 @@ export default function NavigationScreen() {
               latitude: marker.latitude,
               longitude: marker.longitude,
             }}
-            pinColor={getMarkerColor(marker.severity)}
+            pinColor={getMarkerColor(
+              marker.severity
+            )}
             title={marker.title}
             description={marker.description}
+            onPress={() =>
+              handleMarkerPress(marker)
+            }
           />
         ))}
 
@@ -183,25 +297,36 @@ export default function NavigationScreen() {
 
       {/* Legend */}
       <View style={styles.legend}>
-        <Text style={styles.legendTitle}>Legend</Text>
+        <Text style={styles.legendTitle}>
+          Legend
+        </Text>
 
         <View style={styles.legendRow}>
           <View
-            style={[styles.dot, { backgroundColor: "red" }]}
+            style={[
+              styles.dot,
+              { backgroundColor: "red" },
+            ]}
           />
           <Text>Dangerous</Text>
         </View>
 
         <View style={styles.legendRow}>
           <View
-            style={[styles.dot, { backgroundColor: "orange" }]}
+            style={[
+              styles.dot,
+              { backgroundColor: "orange" },
+            ]}
           />
           <Text>Moderate</Text>
         </View>
 
         <View style={styles.legendRow}>
           <View
-            style={[styles.dot, { backgroundColor: "green" }]}
+            style={[
+              styles.dot,
+              { backgroundColor: "green" },
+            ]}
           />
           <Text>Safe</Text>
         </View>
@@ -218,49 +343,77 @@ export default function NavigationScreen() {
         </View>
       )}
 
-      {/* Bottom info card */}
-      <View style={styles.bottomCard}>
-        <Text style={styles.cardTitle}>
-          Moderate Flood Area
-        </Text>
-
-        <Text style={styles.cardText}>
-          Flood depth: ~0.4m
-        </Text>
-
-        <Text
+      {/* Bottom Sheet */}
+      {selectedMarker && cardContent && (
+        <Animated.View
+          {...panResponder.panHandlers}
           style={[
-            styles.cardStatus,
-            { color: routeStatus.color },
+            styles.bottomCard,
+            {
+              transform: [
+                {
+                  translateY:
+                    bottomSheetAnimation,
+                },
+              ],
+            },
           ]}
         >
-          {routeStatus.status}
-        </Text>
+          <View style={styles.dragBar} />
 
-        <Text style={styles.cardNote}>
-          Reduce speed / consider alternate route
-        </Text>
-      </View>
+          <Text style={styles.cardTitle}>
+            {cardContent.title}
+          </Text>
+
+          <Text style={styles.cardText}>
+            {cardContent.depth}
+          </Text>
+
+          <Text
+            style={[
+              styles.cardStatus,
+              { color: cardContent.color },
+            ]}
+          >
+            {cardContent.status}
+          </Text>
+
+          <Text style={styles.cardNote}>
+  {floodData.warning}
+</Text>
+        </Animated.View>
+      )}
 
       {/* Report Modal */}
-      <Modal visible={modalVisible} animationType="slide">
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+      >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>
             Submit Flood Report
           </Text>
 
           <View style={styles.severityContainer}>
-            {["safe", "moderate", "danger"].map((level) => (
+            {[
+              "safe",
+              "moderate",
+              "danger",
+            ].map((level) => (
               <TouchableOpacity
                 key={level}
                 style={[
                   styles.severityButton,
-                  selectedSeverity === level && {
-                    backgroundColor: "#22BCDE",
+                  selectedSeverity ===
+                    level && {
+                    backgroundColor:
+                      "#22BCDE",
                   },
                 ]}
                 onPress={() =>
-                  setSelectedSeverity(level as Severity)
+                  setSelectedSeverity(
+                    level as Severity
+                  )
                 }
               >
                 <Text>{level}</Text>
@@ -285,7 +438,9 @@ export default function NavigationScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setModalVisible(false)}
+            onPress={() =>
+              setModalVisible(false)
+            }
           >
             <Text style={{ marginTop: 20 }}>
               Cancel
@@ -343,6 +498,15 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 20,
     borderRadius: 24,
+  },
+
+  dragBar: {
+    width: 60,
+    height: 6,
+    backgroundColor: "#DDD",
+    borderRadius: 10,
+    alignSelf: "center",
+    marginBottom: 16,
   },
 
   cardTitle: {
